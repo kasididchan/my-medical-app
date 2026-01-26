@@ -96,7 +96,7 @@ export const CalendarView = ({
               onClick={() => setIsModalOpen(true)}
               className="bg-[#009245] hover:bg-[#007a3a] text-white px-6 py-2.5 rounded-full font-medium shadow-sm flex items-center gap-2 transition active:scale-95"
             >
-              <Plus size={18} /> Add New Event 555+
+              <Plus size={18} /> Add New Event
             </button>
           </div>
 
