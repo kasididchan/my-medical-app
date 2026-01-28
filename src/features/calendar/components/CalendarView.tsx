@@ -6,28 +6,38 @@ import {
   isWithinInterval,
   startOfDay,
   endOfDay,
+  isToday,
 } from "date-fns";
 import { th } from "date-fns/locale"; // 🇹🇭 อย่าลืม import locale ไทยมาใช้
 import {
   ChevronLeft,
   ChevronRight,
-  Video,
-  MapPin,
   Plus,
-  Play,
   Copy,
   Clock,
   Calendar as CalendarIcon,
   Info,
+  Inbox,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import type { Appointment } from "../types";
+import zoomIcon from "../../../assets/zoom.png";
+import healthIcon from "../../../assets/health.png";
+import teleIcon from "../../../assets/tele.png";
+
+const eventImages = {
+  zoom: zoomIcon,
+  health: healthIcon,
+  tele: teleIcon,
+};
 
 // --- Configuration สีและไอคอน ---
 const eventStyles = {
-  zoom: "bg-blue-100 text-blue-700 border-l-4 border-blue-500",
-  health: "bg-orange-100 text-orange-800 border-l-4 border-orange-500",
-  tele: "bg-pink-100 text-pink-600 border-l-4 border-pink-500",
+  zoom: "bg-[#60A5FA]",
+  health: "bg-[#FB923C]",
+  tele: "bg-[#f472b6]",
 };
 
 // สี Background สำหรับแถบในปฏิทิน (เข้มกว่าปกติเล็กน้อยเพื่อให้เห็นชัด)
@@ -35,12 +45,6 @@ const eventBgStyles = {
   zoom: "bg-blue-200 text-blue-800",
   health: "bg-orange-200 text-orange-800",
   tele: "bg-pink-200 text-pink-800",
-};
-
-const eventIcons = {
-  zoom: <Video className="w-3 h-3" />,
-  health: <MapPin className="w-3 h-3" />,
-  tele: <Play className="w-3 h-3 fill-current" />,
 };
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -74,6 +78,13 @@ export const CalendarView = ({
   selectedEvent,
   isMobile,
 }: CalendarViewProps) => {
+  const [isCopied, setIsCopied] = React.useState(false);
+  const handleCopy = (text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
   // ฟังก์ชันเช็คว่าวันนั้นมีอีเวนต์อะไรบ้าง (รองรับ Multi-day)
   const getEventsForDay = (day: Date) => {
     return events.filter((event) => {
@@ -96,7 +107,7 @@ export const CalendarView = ({
               onClick={() => setIsModalOpen(true)}
               className="bg-[#009245] hover:bg-[#007a3a] text-white px-6 py-2.5 rounded-full font-medium shadow-sm flex items-center gap-2 transition active:scale-95"
             >
-              <Plus size={18} /> Add New Event 555+
+              <Plus size={18} /> Add New Event
             </button>
           </div>
 
@@ -151,6 +162,7 @@ export const CalendarView = ({
             {calendarDays.map((day, idx) => {
               const dayEvents = getEventsForDay(day); // ใช้ฟังก์ชันใหม่ที่สร้างข้างบน
               const isCurrentMonth = isSameMonth(day, monthStart);
+              const isCurrentDay = isToday(day);
 
               return (
                 <div
@@ -161,11 +173,13 @@ export const CalendarView = ({
                     !isCurrentMonth && "bg-gray-50/50 text-gray-300",
                   )}
                 >
-                  <div className="text-center py-2">
+                  <div className="flex justify-center py-2">
                     <span
                       className={cn(
-                        "text-sm font-medium",
+                        "text-sm font-medium w-8 h-8 flex items-center justify-center rounded-full transition-all", // จัดให้อยู่กึ่งกลางวงกลม
                         !isCurrentMonth && "text-gray-300",
+                        // ✨ ถ้าเป็นวันนี้: ใส่สีพื้นหลัง + ตัวหนังสือขาว + เงา + ขยายหน่อยๆ
+                        isCurrentDay && "bg-[#0033A0] text-white shadow-md font-bold scale-110" 
                       )}
                     >
                       {format(day, "d")}
@@ -209,8 +223,17 @@ export const CalendarView = ({
                               "text-transparent",
                           )}
                         >
-                          {isStart &&
-                            eventIcons[event.type as keyof typeof eventIcons]}
+                          {isStart && (
+                            <img
+                              src={
+                                eventImages[
+                                  event.type as keyof typeof eventImages
+                                ]
+                              }
+                              alt="icon"
+                              className="w-4 h-4 object-contain" // กำหนดขนาดไอคอนในแถบ
+                            />
+                          )}
                           <span className="truncate">
                             {isStart || format(day, "eee") === "Sun"
                               ? event.title
@@ -229,7 +252,8 @@ export const CalendarView = ({
 
       {/* ================= RIGHT SIDE: DETAIL SIDEBAR ================= */}
       <div className="w-full lg:w-[380px] flex flex-col gap-6 pt-0 lg:pt-16">
-        {/* Tab Controls */}
+        
+        {/* Tab Controls (ปุ่มเลือก Tab ด้านบน) */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab("list")}
@@ -237,7 +261,7 @@ export const CalendarView = ({
               "px-4 py-2 rounded-full text-sm font-bold transition",
               activeTab === "list"
                 ? "bg-pink-400 text-white shadow-md"
-                : "text-gray-500 hover:text-gray-800",
+                : "text-gray-500 hover:text-gray-800"
             )}
           >
             Upcoming Events
@@ -248,126 +272,156 @@ export const CalendarView = ({
               "px-4 py-2 rounded-full text-sm font-bold transition",
               activeTab === "detail"
                 ? "bg-pink-400 text-white shadow-md"
-                : "text-gray-500 hover:text-gray-800",
+                : "text-gray-500 hover:text-gray-800"
             )}
           >
             Detail
           </button>
         </div>
 
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 min-h-[500px]">
+        {/* ส่วนแสดงผลข้อมูล (กล่องขาวใหญ่) */}
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 min-h-[500px] flex flex-col">
+          
           {activeTab === "list" ? (
-            /* ... (ส่วน List ใช้โค้ดเดิมได้เลย หรือจะให้ผมแปะซ้ำบอกได้ครับ) ... */
-            <div className="flex flex-col gap-4">
-              {events.slice(0, 4).map((event) => (
-                <div
-                  key={event.id}
-                  onClick={() => handleEventClick(event)}
-                  className="bg-white rounded-[1.5rem] p-4 flex items-center gap-4 hover:shadow-md transition cursor-pointer border border-slate-100"
-                >
+            // ==================== TAB: LIST ====================
+            events.length === 0 ? (
+              // 1.1 ถ้าไม่มีนัดหมายเลย (List ว่าง) -> โชว์ไอคอนกล่อง
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-4 opacity-60">
+                <Inbox size={48} strokeWidth={1.5} />
+                <p className="text-lg font-bold">ตอนนี้ไม่มีนัดหมาย</p>
+              </div>
+            ) : (
+              // 1.2 ถ้ามีนัดหมาย -> โชว์รายการตามปกติ
+              <div className="flex flex-col gap-4">
+                {events.slice(0, 4).map((event) => (
                   <div
-                    className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0",
-                      event.type === "zoom"
-                        ? "bg-blue-400"
-                        : event.type === "health"
-                          ? "bg-orange-400"
-                          : "bg-pink-400",
-                    )}
+                    key={event.id}
+                    onClick={() => handleEventClick(event)}
+                    className="bg-white rounded-[1.5rem] p-4 flex items-center gap-4 hover:shadow-md transition cursor-pointer border border-slate-100 group"
                   >
-                    {eventIcons[event.type as keyof typeof eventIcons]}
+                    <div className="shrink-0">
+                      <img
+                        src={eventImages[event.type as keyof typeof eventImages]}
+                        alt="icon"
+                        className="w-12 h-12 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 text-sm truncate">
+                        {event.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {format(event.date, "MMM d")} • {event.time}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-800 text-sm truncate">
-                      {event.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {format(event.date, "MMM d")} • {event.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
           ) : (
-            // ✅✅✅ ส่วน Detail ที่ปรับปรุงใหม่ ✅✅✅
-            <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
-              {/* 1. ชื่อหัวข้อ */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  ชื่อหัวข้อ
-                </label>
-                <div className="bg-gray-50 rounded-2xl p-4 text-sm font-bold text-slate-800 border border-gray-100 shadow-sm">
-                  {selectedEvent.title}
-                </div>
+            // ==================== TAB: DETAIL ====================
+            !selectedEvent ? (
+              // 2.1 ถ้ายังไม่ได้เลือก Event หรือโดนลบไปแล้ว -> ป้องกันจอขาว!
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-4 opacity-60">
+                <CalendarIcon size={48} strokeWidth={1.5} />
+                <p className="text-lg font-bold">เลือกรายการเพื่อดูรายละเอียด</p>
               </div>
-
-              {/* 2. รายละเอียด */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  รายละเอียด
-                </label>
-                <div className="bg-gray-50 rounded-2xl p-4 text-sm font-medium text-gray-600 border border-gray-100 min-h-[80px]">
-                  {selectedEvent.description}
+            ) : (
+              // 2.2 ถ้ามีข้อมูล -> โชว์รายละเอียด
+              <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                
+                {/* 1. ชื่อหัวข้อ */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">ชื่อหัวข้อ</label>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-sm font-bold text-slate-800 border border-gray-100 shadow-sm">
+                    {selectedEvent.title}
+                  </div>
                 </div>
-              </div>
 
-              {/* 3. ช่วงวันที่ & เวลา (แสดงคู่กัน) */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  ช่วงวันที่
-                </label>
-                <div className="bg-gray-50 rounded-2xl p-3 text-xs font-bold text-slate-700 border border-gray-100 flex items-center gap-2">
-                  <CalendarIcon size={14} className="text-pink-400" />
-                  {format(selectedEvent.date, "dd MMM yyyy")}
-                  {selectedEvent.endDate &&
-                    ` - ${format(selectedEvent.endDate, "dd MMM yyyy")}`}
+                {/* 2. รายละเอียด */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">รายละเอียด</label>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-sm font-medium text-gray-600 border border-gray-100 min-h-[80px]">
+                    {selectedEvent.description || "-"}
+                  </div>
                 </div>
-              </div>
 
-              {/* 4. ช่วงเวลา (แยกออกมาเป็นก้อนที่สองต่อท้าย) */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  ช่วงเวลา
-                </label>
-                <div className="bg-gray-50 rounded-2xl p-3 text-xs font-bold text-slate-700 border border-gray-100 flex items-center gap-2">
-                  <Clock size={14} className="text-pink-400" />
-                  {selectedEvent.time}
+                {/* 3. วันที่ */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">ช่วงวันที่</label>
+                  <div className="bg-gray-50 rounded-2xl p-3 text-xs font-bold text-slate-700 border border-gray-100 flex items-center gap-2">
+                    <CalendarIcon size={14} className="text-pink-400" />
+                    {format(selectedEvent.date, "dd MMM yyyy")}
+                    {selectedEvent.endDate && ` - ${format(selectedEvent.endDate, "dd MMM yyyy")}`}
+                  </div>
                 </div>
-              </div>
 
-              {/* 4. ประเภท */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  ประเภท
-                </label>
-                <div
-                  className={cn(
-                    "rounded-2xl p-3 text-sm font-bold border flex items-center gap-2",
-                    // เลือกสีตามประเภท
-                    eventStyles[selectedEvent.type as keyof typeof eventStyles],
+                {/* 4. เวลา */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">ช่วงเวลา</label>
+                  <div className="bg-gray-50 rounded-2xl p-3 text-xs font-bold text-slate-700 border border-gray-100 flex items-center gap-2">
+                    <Clock size={14} className="text-pink-400" />
+                    {selectedEvent.time}
+                  </div>
+                </div>
+
+                {/* 5. ประเภท */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">ประเภท</label>
+                  <div className={cn("rounded-2xl p-3 text-sm font-bold border flex items-center gap-2", eventStyles[selectedEvent.type as keyof typeof eventStyles])}>
+                    <img src={eventImages[selectedEvent.type as keyof typeof eventImages]} className="w-4 h-4 object-contain" alt={selectedEvent.type}/>
+                    <span className="capitalize">{selectedEvent.type}</span>
+                  </div>
+                </div>
+
+                {/* 6. สถานที่ (อัปเกรดใหม่ 🚀) */}
+                <div>
+                  <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">สถานที่ / Link</label>
+                  
+                  {/* เช็คว่าเป็น Link หรือไม่? */}
+                  {selectedEvent.location?.startsWith("http") ? (
+                    // 🅰️ กรณีเป็น Link: กดแล้วเปิด Tab ใหม่
+                    <div className="bg-white rounded-2xl p-3 text-sm border border-gray-200 flex justify-between items-center group hover:border-blue-300 transition">
+                      <a 
+                        href={selectedEvent.location} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="truncate flex-1 font-medium text-blue-500 hover:underline flex items-center gap-1"
+                      >
+                         <ExternalLink size={12} /> {/* ไอคอนลูกศรชี้ออก */}
+                         {selectedEvent.location}
+                      </a>
+                      
+                      {/* ปุ่ม Copy แยกต่างหากทางขวา */}
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // กันไม่ให้ไปกดโดน Link
+                          handleCopy(selectedEvent.location || "");
+                        }}
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-blue-500"
+                        title="Copy Link"
+                      >
+                        {isCopied ? <Check size={16} className="text-green-500"/> : <Copy size={16} />}
+                      </button>
+                    </div>
+                  ) : (
+                    // 🅱️ กรณีข้อความธรรมดา: กดที่กล่องเพื่อ Copy ได้เลย
+                    <div 
+                      onClick={() => handleCopy(selectedEvent.location || "Online")}
+                      className="bg-white rounded-2xl p-3 text-sm text-gray-700 border border-gray-200 flex justify-between items-center cursor-pointer group hover:border-blue-300 transition hover:bg-gray-50 active:scale-[0.99]"
+                    >
+                      <span className="truncate flex-1 font-medium">
+                        {selectedEvent.location || "Online"}
+                      </span>
+                      <div className="text-gray-300 group-hover:text-blue-400 transition">
+                         {isCopied ? <Check size={16} className="text-green-500"/> : <Copy size={16} />}
+                      </div>
+                    </div>
                   )}
-                >
-                  {eventIcons[selectedEvent.type as keyof typeof eventIcons]}
-                  <span className="capitalize">{selectedEvent.type}</span>
                 </div>
-              </div>
 
-              {/* 5. สถานที่ */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">
-                  สถานที่
-                </label>
-                <div className="bg-white rounded-2xl p-3 text-sm text-blue-500 border border-gray-200 flex justify-between items-center hover:border-blue-300 cursor-pointer group transition">
-                  <span className="truncate flex-1 font-medium">
-                    {selectedEvent.location || "Online"}
-                  </span>
-                  <Copy
-                    size={16}
-                    className="text-gray-300 group-hover:text-blue-400"
-                  />
-                </div>
               </div>
-            </div>
+            )
           )}
         </div>
       </div>
