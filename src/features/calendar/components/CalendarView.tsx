@@ -30,21 +30,21 @@ import teleIcon from "../../../assets/tele.png";
 const eventImages = {
   zoom: zoomIcon,
   health: healthIcon,
-  tele: teleIcon,
+  'tele-medicine': teleIcon,
 };
 
 // --- Configuration สีและไอคอน ---
 const eventStyles = {
   zoom: "bg-[#60A5FA]",
   health: "bg-[#FB923C]",
-  tele: "bg-[#f472b6]",
+  'tele-medicine': "bg-[#f472b6]",
 };
 
 // สี Background สำหรับแถบในปฏิทิน (เข้มกว่าปกติเล็กน้อยเพื่อให้เห็นชัด)
 const eventBgStyles = {
   zoom: "bg-blue-200 text-blue-800",
   health: "bg-orange-200 text-orange-800",
-  tele: "bg-pink-200 text-pink-800",
+  'tele-medicine': "bg-pink-200 text-pink-800",
 };
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -368,9 +368,8 @@ export const CalendarView = ({
                 {/* 5. ประเภท */}
                 <div>
                   <label className="text-xs font-bold text-gray-400 mb-1.5 block ml-1">ประเภท</label>
-                  <div className={cn("rounded-2xl p-3 text-sm font-bold border flex items-center gap-2", eventStyles[selectedEvent.type as keyof typeof eventStyles])}>
-                    <img src={eventImages[selectedEvent.type as keyof typeof eventImages]} className="w-4 h-4 object-contain" alt={selectedEvent.type}/>
-                    <span className="capitalize">{selectedEvent.type}</span>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-sm font-medium text-gray-700 border border-gray-100 capitalize">
+                    {selectedEvent.type}
                   </div>
                 </div>
 
