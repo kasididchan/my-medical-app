@@ -1,7 +1,12 @@
 const mongoose = require("mongoose");
-
 const AppointmentSchema = new mongoose.Schema(
   {
+    //ผูกนัดหมายเข้ากับ User ID
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     title: { type: String, required: true },
     description: { type: String },
 
@@ -21,6 +26,9 @@ const AppointmentSchema = new mongoose.Schema(
       enum: ["Pending", "Success", "Cancelled"],
       default: "Pending",
     },
+    notificationTime: { type: Number, default: 30 },
+    isEmailSent: { type: Boolean, default: false },
+    participants: { type: [String], default: [] },
   },
   { timestamps: true },
 );

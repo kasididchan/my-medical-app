@@ -11,4 +11,5 @@ export interface Appointment {
   time: string;
   location?: string;
   status: AppointmentStatus;
+  notificationTime?: number;
 }
